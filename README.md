@@ -58,9 +58,4 @@ This strategy aims to capture medium-to-long term trends by following momentum a
 
 ![Equity Curve](equity_curve.png)
 
-## Results
-
-Strategy performance vs benchmark:
-
-![Equity Curve](equity_curve.png)
 
