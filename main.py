@@ -1,5 +1,6 @@
 from data import get_data
 from strategies.moving_average_crossover import moving_average_strategy
+from strategies.macd_crossover import macd_strategy
 from backtester import backtest
 from metrics import Metrics
 
@@ -8,33 +9,38 @@ import matplotlib.pyplot as plt
 # 1. Get data
 data = get_data()
 
-# 2. Apply strategy
-df = moving_average_strategy(data)
+# 2. Apply strategies
+df_ma = moving_average_strategy(data)
+df_macd = macd_strategy(data)
 
 # 3. Backtest
-df = backtest(df)
-
-result = backtest(df)
+result_ma = backtest(df_ma)
+result_macd = backtest(df_macd)
 
 # 4. Metrics
-metrics = Metrics.compute(df)
+metrics_ma = Metrics.compute(result_ma)
+metrics_macd = Metrics.compute(result_macd)
 
-print("Performance:")
-for k, v in metrics.items():
+print("\n=== Moving Average Strategy ===")
+for k, v in metrics_ma.items():
     print(f"{k}: {v:.2f}")
 
-# Normalizar precio del SPY (para compararlo con equity)
-result['benchmark'] = result['Close'] / result['Close'].iloc[0] * 10000
+print("\n=== MACD Strategy ===")
+for k, v in metrics_macd.items():
+    print(f"{k}: {v:.2f}")
 
-# 5. Plot
+# 5. Benchmark (usar uno de los results)
+result_ma['benchmark'] = result_ma['Close'] / result_ma['Close'].iloc[0] * 10000
+
+# 6. Plot
 plt.figure(figsize=(10,5))
 
-plt.plot(result['equity'], label="Strategy")
-plt.plot(result['benchmark'], label="Buy & Hold (SPY)", linestyle='--')
+plt.plot(result_ma['equity'], label="MA Strategy")
+plt.plot(result_macd['equity'], label="MACD Strategy")
+plt.plot(result_ma['benchmark'], label="Buy & Hold (SPY)", linestyle='--')
 
-plt.title("Strategy vs Benchmark")
+plt.title("Strategy Comparison vs Benchmark")
 plt.legend()
 
 plt.savefig("equity_curve.png")
-
 plt.show()

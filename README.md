@@ -54,8 +54,24 @@ This strategy aims to capture medium-to-long term trends by following momentum a
 - Max Drawdown: -0.34  
 - Win Rate: 0.41  
 
+
+## MACD Crossover Strategy (Frast: 12, Slow: 26, Signal: 9)
+
+This strategy is based on the Moving Average Convergence Divergence (MACD) indicator, which measures momentum using the difference between two exponential moving averages.
+
+### Logic
+- A buy signal is generated when the MACD line crosses above the signal line, indicating increasing bullish momentum.
+- A sell signal is generated when the MACD line crosses below the signal line, indicating weakening momentum or potential bearish conditions.
+
+This baseline implementation does not include any trend or volatility filters, making it more sensitive to market noise and prone to false signals during sideways market conditions.
+
+### Performance
+- Total Return: 2.74
+- Sharpe Ratio: 0.42
+- Max Drawdown: -0.38
+- Win Rate: 0.27
+
+
 ### Equity Curve
 
 ![Equity Curve](equity_curve.png)
-
-
