@@ -35,4 +35,6 @@ plt.plot(result['benchmark'], label="Buy & Hold (SPY)", linestyle='--')
 plt.title("Strategy vs Benchmark")
 plt.legend()
 
+plt.savefig("equity_curve.png")
+
 plt.show()
