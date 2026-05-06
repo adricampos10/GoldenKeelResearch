@@ -32,6 +32,12 @@ Ongoing development is focused on:
 - Matplotlib
 - yfinance
 
+## Results
+
+Strategy performance vs benchmark:
+
+![Equity Curve](equity_curve.png)
+
 ## Disclaimer
 
 This project is for educational and research purposes only and does not constitute financial advice.
