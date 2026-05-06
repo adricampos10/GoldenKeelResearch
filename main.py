@@ -1,5 +1,5 @@
 from data import get_data
-from strategy import moving_average_strategy
+from strategies.moving_average_crossover import moving_average_strategy
 from backtester import backtest
 from metrics import Metrics
 
