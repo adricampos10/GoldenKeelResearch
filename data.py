@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 
-def get_data(ticker="SPY", start="1990-01-01", end="2026-01-01"):
+def get_data(ticker="SPY", start="1990-01-01", end="2026-01-05"):
     df = yf.download(ticker, start=start, end=end)
 
     # FIX CRiTICO: flatten columns
