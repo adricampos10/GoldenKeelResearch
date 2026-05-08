@@ -1,6 +1,6 @@
 from data import get_data
 from strategies.moving_average_crossover import MovingAverageStrategy
-from strategies.macd_crossover import macd_strategy
+from strategies.macd_crossover import MACDStrategy
 from backtester import backtest
 from metrics import Metrics
 
@@ -11,7 +11,7 @@ data = get_data()
 
 # 2. Apply strategies
 df_ma = MovingAverageStrategy(short_window=50, long_window=200).fit(data).get_signals()
-df_macd = macd_strategy(data)
+df_macd = MACDStrategy(fast=12, slow=26, signal_window=9).fit(data).get_signals()
 
 # 3. Backtest
 result_ma = backtest(df_ma)
