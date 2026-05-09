@@ -31,6 +31,22 @@ Ongoing development is focused on:
 - Pandas
 - Matplotlib
 - yfinance
+- IBKR API
+
+## IBKR Data Integration
+
+This folder contains the integration with Interactive Brokers API as an alternative to yfinance for fetching market data.
+
+The `IBDataFetcher` class connects directly to Trader Workstation (TWS) via `ib_insync`, retrieving real-time and historical OHLCV data for any supported ticker. This allows for more reliable and professional-grade data compared to yfinance.
+
+Both data sources will be developed in parallel:
+- **yfinance** — lightweight, no setup required, used for rapid strategy research and backtesting
+- **IBKR API** — production-grade data, requires TWS running, used for live and more accurate historical data
+
+### Requirements
+- Interactive Brokers account with TWS installed and running
+- API enabled in TWS settings (`Edit → Global Configuration → API → Settings`)
+- `ib_insync` installed: `pip install ib_insync`
 
 ## Disclaimer
 
