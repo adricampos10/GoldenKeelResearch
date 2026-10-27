@@ -16,10 +16,12 @@ class MACDStrategy:
         self.df['macd']        = ema_fast - ema_slow
         self.df['signal_line'] = self.df['macd'].ewm(span=self.signal_window, adjust=False).mean()
 
+        # 1 = long, -1 = short, 0 = no signal yet
         self.df['signal'] = 0
-        self.df.loc[self.df.index[self.slow:], 'signal'] = (
+        mask = self.df.index[self.slow:]
+        self.df.loc[mask, 'signal'] = (
             self.df['macd'][self.slow:] > self.df['signal_line'][self.slow:]
-        ).astype(int)
+        ).map({True: 1, False: -1})
 
         self.df['position'] = self.df['signal'].diff().fillna(0)
 
@@ -31,11 +33,11 @@ class MACDStrategy:
 
     def get_entries(self) -> pd.DataFrame:
         self._check_fitted()
-        return self.df[self.df['position'] == 1]
+        return self.df[self.df['signal'] != 0]
 
     def get_exits(self) -> pd.DataFrame:
         self._check_fitted()
-        return self.df[self.df['position'] == -1]
+        return self.df[self.df['position'] == 0]
 
     def _check_fitted(self):
         if self.df is None:

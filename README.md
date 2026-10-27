@@ -91,3 +91,9 @@ This baseline implementation does not include any trend or volatility filters, m
 ### Equity Curve
 
 ![Equity Curve](equity_curve.png)
+
+## Roadmap
+
+- [ ] Kalshi API integration as an alternative data source for event-driven signals
+- [ ] Statistical validation of strategies using SciPy (t-tests, p-values, return distribution analysis)
+- [ ] Machine learning signal generation using Scikit-learn (Random Forest, regime classification)
