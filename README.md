@@ -10,10 +10,10 @@ The project focuses on translating price action and market structure concepts in
 
 - Historical data ingestion (Yahoo Finance)
 - Strategy development framework
-- Moving average crossover strategy (baseline)
-- Backtesting engine with transaction costs
+- Four baseline strategies: SMA crossover, EMA crossover, MACD crossover and 252-day fakeout
+- Backtesting engine with next-bar execution, commission and slippage
 - Performance metrics (Sharpe ratio, drawdown, win rate)
-- Benchmark comparison against buy & hold
+- Benchmark comparison against buy & hold, with log-scale equity and drawdown charts
 
 ## Current Focus
 
@@ -52,41 +52,50 @@ Both data sources will be developed in parallel:
 
 This project is for educational and research purposes only and does not constitute financial advice.
 
-## Moving Average Crossover Strategy (50 / 200)
+## Usage
 
-This strategy is based on a simple moving average crossover system.
+```
+python main.py
+```
 
-### Logic
+Downloads SPY daily data (1993–2026), runs every strategy and saves the comparison chart to `results/equity_curve_<timestamp>.png`.
 
-- A **buy signal** is generated when the short-term moving average (50-period) crosses **above** the long-term moving average (200-period).
-- A **sell signal** is generated when the short-term moving average crosses **below** the long-term moving average.
+## Backtest Assumptions
 
-This strategy aims to capture medium-to-long term trends by following momentum and filtering out short-term market noise.
+- Signals computed on the close of day *t* are executed on the close of day *t+1* (no look-ahead).
+- Each position uses the full account; shorts keep the cash as collateral.
+- Every entry and exit pays 5 bps commission + 5 bps slippage.
+- Starting capital: $10,000.
 
-### Performance
+## Strategies
 
-- Total Return: 19.03  
-- Sharpe Ratio: 0.74  
-- Max Drawdown: -0.34  
-- Win Rate: 0.41  
+### Moving Average Crossover (50 / 200)
 
+Long when the 50-day simple moving average is above the 200-day, short when it is below. Aims to capture medium-to-long term trends while filtering out short-term noise.
 
-## MACD Crossover Strategy (Frast: 12, Slow: 26, Signal: 9)
+### EMA Crossover (50 / 200)
 
-This strategy is based on the Moving Average Convergence Divergence (MACD) indicator, which measures momentum using the difference between two exponential moving averages.
+Same rules as the SMA crossover but with exponential moving averages, which react faster to recent prices.
 
-### Logic
-- A buy signal is generated when the MACD line crosses above the signal line, indicating increasing bullish momentum.
-- A sell signal is generated when the MACD line crosses below the signal line, indicating weakening momentum or potential bearish conditions.
+### MACD Crossover (Fast: 12, Slow: 26, Signal: 9)
 
-This baseline implementation does not include any trend or volatility filters, making it more sensitive to market noise and prone to false signals during sideways market conditions.
+Long when the MACD line is above its signal line, short when it is below. This baseline has no trend or volatility filters, so it trades very often and is prone to false signals in sideways markets.
 
-### Performance
-- Total Return: 2.74
-- Sharpe Ratio: 0.42
-- Max Drawdown: -0.38
-- Win Rate: 0.27
+### Fakeout (252-day window)
 
+- **Bull fakeout**: price breaks below the 252-day low but closes back above it → go long.
+- **Bear fakeout**: price breaks above the 252-day high but closes back below it → exit to cash (or go short if `trade_shorts=True`).
+
+## Performance (SPY, 1993–2026, after costs)
+
+| Strategy | Total Return | Sharpe | Max Drawdown | Win Rate (days) |
+|---|---|---|---|---|
+| MA Crossover 50/200 | 778% | 0.48 | -50% | 52% |
+| EMA Crossover 50/200 | 594% | 0.43 | -63% | 52% |
+| Fakeout 252 | 87% | 0.22 | -59% | 10% |
+| MACD 12/26/9 | -97% | -0.53 | -97% | 47% |
+
+None of the strategies beats buy & hold over the full period. The trend-following crossovers limit losses in 2000–2003 and 2008 but are caught short in the fast 2020 rebound. MACD is destroyed by transaction costs. Win rate counts winning days, so the often-flat fakeout strategy scores low.
 
 ### Equity Curve
 
