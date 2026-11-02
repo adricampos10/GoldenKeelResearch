@@ -1,6 +1,5 @@
 from data import get_data
 from strategies.moving_average_crossover import MovingAverageStrategy
-from strategies.macd_crossover import MACDStrategy
 from strategies.fakeout import FakeoutStrategy
 from strategies.ema_crossover import EMAStrategy
 from strategies.range_fakeout import RangeFakeoutStrategy
@@ -18,10 +17,9 @@ def main():
 
     # 2. Apply strategies
     df_ma      = MovingAverageStrategy(short_window=50, long_window=200).fit(data).get_signals()
-    df_macd    = MACDStrategy(fast=12, slow=26, signal_window=9).fit(data).get_signals()
     df_fakeout = FakeoutStrategy(window=252, trade_shorts=False).fit(data).get_signals()
     df_ema     = EMAStrategy(short_window=50, long_window=200).fit(data).get_signals()
-    range_fakeout = RangeFakeoutStrategy(max_below_sma=0.15).fit(data)
+    range_fakeout = RangeFakeoutStrategy(max_below_sma=0.15, macd_filter="divergence").fit(data)
     df_range   = range_fakeout.get_signals()
 
     # DEBUG fakeout
@@ -42,7 +40,6 @@ def main():
 
     # 3. Backtest
     result_ma      = backtest(df_ma)
-    result_macd    = backtest(df_macd)
     result_fakeout = backtest(df_fakeout)
     result_ema     = backtest(df_ema)
     result_range   = backtest(df_range)
@@ -50,7 +47,6 @@ def main():
     # 4. Metrics
     metrics = {
         "Moving Average": Metrics.compute(result_ma),
-        "MACD":           Metrics.compute(result_macd),
         "Fakeout":        Metrics.compute(result_fakeout),
         "EMA":            Metrics.compute(result_ema),
         "Range Fakeout":  Metrics.compute(result_range),
@@ -75,7 +71,6 @@ def main():
 
     curves = {
         "MA Strategy":      result_ma['equity'],
-        "MACD Strategy":    result_macd['equity'],
         "Fakeout Strategy": result_fakeout['equity'],
         "EMA Strategy":     result_ema['equity'],
         "Range Fakeout":    result_range['equity'],
