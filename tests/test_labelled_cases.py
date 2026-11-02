@@ -74,3 +74,17 @@ def test_every_case_has_its_data_file():
     missing = [c["id"] for c in CASES
                if not os.path.exists(os.path.join(ROOT, "tests", "data", "labels", f"{c['id']}.csv"))]
     assert not missing, f"run `python -m patterns.fetch_label_data` for {missing}"
+
+
+# The MACD divergence filter needs a base with two swing lows, so it keeps the
+# structure-confirmed winners and drops the one-candle reversals, good or bad
+@pytest.mark.parametrize("case", [c for c in WINNERS if trigger_for(c) == "structure"
+                                  and isinstance(c["range"]["support"], list)], ids=lambda c: c["id"])
+def test_divergence_filter_keeps_the_structure_winners(case):
+    assert holds_labelled_trade(case, **FILTERS, macd_filter="divergence")
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if trigger_for(c) == "candle"], ids=lambda c: c["id"])
+def test_divergence_filter_drops_one_candle_reversals(case):
+    sees = CAUGHT_BY.get(case["id"], (dict(), None))[0]
+    assert not holds_labelled_trade(case, **sees, macd_filter="divergence")

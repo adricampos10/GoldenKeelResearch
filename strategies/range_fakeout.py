@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from indicators import macd
 from strategies.base import Strategy
 
 
@@ -28,7 +29,13 @@ class RangeFakeoutStrategy(Strategy):
        until the stop or the target is touched.
 
     Optional filters: `max_below_sma` (skip longs this far below the 200-day
-    average, shorts this far above it) and `min_reward_risk`.
+    average, shorts this far above it), `min_reward_risk`, and `macd_filter`,
+    which holds the entry until the MACD (12/26/9) agrees:
+       - "momentum": MACD line above its signal line on the trigger bar.
+       - "divergence": MACD higher at the later of the two base lows than at the
+         earlier one (bullish divergence when the later low is as low or lower).
+       - "slow_trend": slow MACD (60/130/45, about 12/26/9 on weekly bars) above
+         its signal line.
     """
 
     columns = ['support', 'resistance', 'stop', 'target']
@@ -37,10 +44,12 @@ class RangeFakeoutStrategy(Strategy):
                  zone=0.15, min_touches=2, min_height_atr=3.0, max_depth=0.5,
                  max_base_bars=100, trigger="structure", stop_atr=0.25,
                  max_below_sma=None, min_reward_risk=None, trade_shorts=False,
-                 atr_window=20, pivot=5, base_pivot=2):
+                 macd_filter=None, atr_window=20, pivot=5, base_pivot=2):
         super().__init__()
         if trigger not in ("structure", "candle", "both"):
             raise ValueError("trigger must be 'structure', 'candle' or 'both'")
+        if macd_filter not in (None, "momentum", "divergence", "slow_trend"):
+            raise ValueError("macd_filter must be None, 'momentum', 'divergence' or 'slow_trend'")
         self.windows         = list(range(min_range_bars, max_range_bars + 1, range_step))[::-1]
         self.zone            = zone
         self.min_touches     = min_touches
@@ -52,6 +61,7 @@ class RangeFakeoutStrategy(Strategy):
         self.max_below_sma   = max_below_sma
         self.min_reward_risk = min_reward_risk
         self.trade_shorts    = trade_shorts
+        self.macd_filter     = macd_filter
         self.atr_window      = atr_window
         self.pivot           = pivot
         self.base_pivot      = base_pivot
@@ -111,6 +121,9 @@ class RangeFakeoutStrategy(Strategy):
         range_lows  = _pivots(l, self.pivot, low=True)
         range_highs = _pivots(h, self.pivot, low=False)
         base_lows   = _pivots(l, self.base_pivot, low=True)
+        closes      = pd.Series(c)
+        macd_line, macd_signal, _ = (x.to_numpy() for x in macd(closes))
+        slow_line, slow_signal, _ = (x.to_numpy() for x in macd(closes, 60, 130, 45))
 
         trades, setup, position = [], None, None
         for t in range(1, n):
@@ -147,6 +160,15 @@ class RangeFakeoutStrategy(Strategy):
             base_low = l[setup['break_bar']:t + 1].min()
             if not self._triggered(t, o, h, l, c, atr, support, setup['break_bar'], base_lows):
                 continue
+            # The MACD filter only delays the entry: the setup stays alive until it agrees
+            if self.macd_filter == "momentum" and not macd_line[t] > macd_signal[t]:
+                continue
+            if self.macd_filter == "slow_trend" and not slow_line[t] > slow_signal[t]:
+                continue
+            if self.macd_filter == "divergence":
+                pair = self._base_pair(t, l, atr, support, setup['break_bar'], base_lows)
+                if pair is None or not macd_line[pair[1]] > macd_line[pair[0]]:
+                    continue
 
             stop   = base_low - self.stop_atr * atr[t]
             target = setup['resistance'] - self.zone * height
@@ -205,24 +227,30 @@ class RangeFakeoutStrategy(Strategy):
             return True
         return False
 
-    def _structure(self, t, h, l, c, atr, support, break_bar, base_lows):
+    def _base_pair(self, t, l, atr, support, break_bar, base_lows):
+        """The two swing lows that shape the base, (earlier, later), or None."""
         # Swing lows of the base, confirmed by bar t; the base may start a few bars before the break
         confirmed = base_lows[(base_lows >= break_bar - 4 * self.pivot) & (base_lows + self.base_pivot <= t)]
         near = [i for i in confirmed if l[i] <= support + atr[t]]
         if len(near) < 2:
-            return False
+            return None
         # Pair the lowest swing low of the base (the head) with the latest one, a higher low.
         # If the head is the latest, pair it with the previous swing low: a double bottom
         # whose second low is slightly lower.
         head = min(near, key=lambda i: l[i])
         if l[head] >= support:
-            return False
+            return None
         if head != near[-1]:
-            a, b = head, near[-1]
-        else:
-            a, b = near[-2], head
-            if l[a] > l[b] + atr[t]:
-                return False
+            return head, near[-1]
+        if l[near[-2]] > l[head] + atr[t]:
+            return None
+        return near[-2], head
+
+    def _structure(self, t, h, l, c, atr, support, break_bar, base_lows):
+        pair = self._base_pair(t, l, atr, support, break_bar, base_lows)
+        if pair is None:
+            return False
+        a, b = pair
         neckline = h[a + 1:b].max() if b > a + 1 else h[a]
         return c[t] > neckline
 

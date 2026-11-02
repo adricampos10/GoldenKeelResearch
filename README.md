@@ -12,7 +12,7 @@ The project focuses on translating price action and market structure concepts in
 
 - Historical data ingestion (Yahoo Finance)
 - Strategy development framework
-- Four baseline strategies: SMA crossover, EMA crossover, MACD crossover and 252-day fakeout
+- Three baseline strategies: SMA crossover, EMA crossover and 252-day fakeout
 - A range fakeout detector built from hand-labelled chart examples, tested against them
 - Backtesting engine with next-bar execution, commission and slippage
 - Performance metrics (Sharpe ratio, drawdown, win rate)
@@ -99,10 +99,6 @@ Long when the 50-day simple moving average is above the 200-day, short when it i
 
 Same rules as the SMA crossover but with exponential moving averages, which react faster to recent prices.
 
-### MACD Crossover (Fast: 12, Slow: 26, Signal: 9)
-
-Long when the MACD line is above its signal line, short when it is below. This baseline has no trend or volatility filters, so it trades very often and is prone to false signals in sideways markets.
-
 ### Fakeout (252-day window)
 
 - **Bull fakeout**: price breaks below the 252-day low but closes back above it → go long.
@@ -117,7 +113,9 @@ A false break of a long sideways range, as I trade it by hand:
 3. **Reversal**: the lowest swing low of the base plus a higher low (or an almost equal second bottom), and a close above the high between them, back inside the range. This covers double and triple bottoms, inverse head and shoulders and messy bases. `trigger="candle"` uses a bullish engulfing or a hammer instead.
 4. **Trade**: long on that close, stop below the base, target at the bottom of the resistance zone.
 
-Optional filters: `max_below_sma` (skip longs too far below the 200-day average) and `min_reward_risk`. With `trade_shorts=True` the same rules run upside down on breaks above the ceiling. Stops and targets are checked on highs and lows, but like every signal they are executed on the next close.
+Optional filters: `max_below_sma` (skip longs too far below the 200-day average), `min_reward_risk` and `macd_filter`, which waits for the MACD to agree: `"momentum"` (MACD above its signal line), `"divergence"` (MACD higher at the second low of the base than at the first) or `"slow_trend"` (60/130/45 MACD above its signal line).
+
+On 18 assets (US and foreign indices, large caps, gold, oil and FX, all history), the longs made money and the shorts lost it: the long trades had a profit factor of 1.37, the shorts 0.51. The divergence filter raised the long profit factor to 1.53, and it helped before and after 2010 and on stocks, commodities and FX alike. On SPY alone the strategy still loses: most of its few trades bought range floors in 2000–2002. With `trade_shorts=True` the same rules run upside down on breaks above the ceiling. Stops and targets are checked on highs and lows, but like every signal they are executed on the next close.
 
 ## Pattern Labels
 
@@ -137,9 +135,8 @@ pytest tests/test_labelled_cases.py
 | MA Crossover 50/200 | 778% | 0.48 | -50% | 52% |
 | EMA Crossover 50/200 | 594% | 0.43 | -63% | 52% |
 | Fakeout 252 | 87% | 0.22 | -59% | 10% |
-| MACD 12/26/9 | -97% | -0.53 | -97% | 47% |
 
-None of the strategies beats buy & hold over the full period. The trend-following crossovers limit losses in 2000–2003 and 2008 but are caught short in the fast 2020 rebound. MACD is destroyed by transaction costs. Win rate counts winning days, so the often-flat fakeout strategy scores low.
+None of the strategies beats buy & hold over the full period. The trend-following crossovers limit losses in 2000–2003 and 2008 but are caught short in the fast 2020 rebound. Win rate counts winning days, so the often-flat fakeout strategy scores low.
 
 ### Equity Curve
 

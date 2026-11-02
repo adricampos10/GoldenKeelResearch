@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from conftest import make_prices
+from indicators import macd
 from strategies.range_fakeout import RangeFakeoutStrategy
 
 
@@ -109,3 +110,25 @@ def test_min_reward_risk_filters_the_trade():
 def test_unknown_trigger_raises():
     with pytest.raises(ValueError, match="trigger"):
         RangeFakeoutStrategy(trigger='magic')
+
+
+# --- MACD filter ---------------------------------------------------------------
+
+def test_macd_filters_that_agree_keep_the_same_entry():
+    # The second bottom (bar 330) has a higher MACD than the first (bar 317): a bullish divergence
+    line, _, _ = macd(pd.Series(FAKEOUT))
+    assert line[330] > line[317]
+
+    entries = {f: [t['entry_bar'] for t in RangeFakeoutStrategy(macd_filter=f).fit(prices(FAKEOUT)).trades]
+               for f in (None, 'momentum', 'divergence')}
+    assert entries['momentum'] == entries['divergence'] == entries[None]
+
+
+def test_slow_trend_filter_skips_a_fakeout_without_a_rising_slow_macd():
+    # After 300 sideways bars and a dip, the 60/130/45 MACD has not turned up yet
+    assert RangeFakeoutStrategy(macd_filter='slow_trend').fit(prices(FAKEOUT)).trades == []
+
+
+def test_unknown_macd_filter_raises():
+    with pytest.raises(ValueError, match="macd_filter"):
+        RangeFakeoutStrategy(macd_filter='magic')

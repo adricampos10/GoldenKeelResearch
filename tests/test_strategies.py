@@ -5,14 +5,12 @@ from conftest import make_prices
 from strategies.base import Strategy
 from strategies.ema_crossover import EMAStrategy
 from strategies.fakeout import FakeoutStrategy
-from strategies.macd_crossover import MACDStrategy
 from strategies.moving_average_crossover import MovingAverageStrategy
 from strategies.range_fakeout import RangeFakeoutStrategy
 
 ALL_STRATEGIES = [
     MovingAverageStrategy(short_window=5, long_window=20),
     EMAStrategy(short_window=5, long_window=20),
-    MACDStrategy(fast=5, slow=12, signal_window=4),
     FakeoutStrategy(window=20),
     FakeoutStrategy(window=20, trade_shorts=True),
     RangeFakeoutStrategy(trade_shorts=True),
@@ -83,11 +81,6 @@ def test_crossover_goes_long_in_the_uptrend_and_short_in_the_downtrend(strategy)
     assert signal[:4] == [0, 0, 0, 0]   # warm-up
     assert signal[10] == 1
     assert signal[-1] == -1
-
-
-def test_macd_warm_up_lasts_slow_bars():
-    signal = MACDStrategy(fast=2, slow=5, signal_window=2).fit(make_prices(UP_THEN_DOWN))
-    assert signal.get_signals()["signal"].tolist()[:5] == [0] * 5
 
 
 # --- fakeout -------------------------------------------------------------------

@@ -37,7 +37,7 @@ def test_max_drawdown_includes_a_drop_from_the_first_day():
 def test_to_markdown_has_one_row_per_strategy():
     table = Metrics.to_markdown({
         "EMA":  {"Total Return": 1.5, "Sharpe": 0.8123, "Max Drawdown": -0.25, "Win Rate": 0.5},
-        "MACD": {"Total Return": -0.1, "Sharpe": -0.2, "Max Drawdown": -0.4, "Win Rate": 0.45},
+        "Fakeout": {"Total Return": -0.1, "Sharpe": -0.2, "Max Drawdown": -0.4, "Win Rate": 0.45},
     }).splitlines()
 
     assert table[0] == "| Strategy | Total Return | Sharpe | Max Drawdown | Win Rate |"
