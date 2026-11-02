@@ -1,5 +1,7 @@
 # Systematic Trading Research Project
 
+[![CI](https://github.com/adricampos10/GoldenKeelResearch/actions/workflows/ci.yml/badge.svg)](https://github.com/adricampos10/GoldenKeelResearch/actions/workflows/ci.yml)
+
 This repository contains a Python-based framework for developing and testing systematic trading strategies in financial markets.
 
 ## Overview
@@ -47,6 +49,7 @@ Both data sources will be developed in parallel:
 - Interactive Brokers account with TWS installed and running
 - API enabled in TWS settings (`Edit → Global Configuration → API → Settings`)
 - `ib_insync` installed: `pip install ib_insync`
+- Check the connection from the repo root: `python -m ibkr.check_connection`
 
 ## Disclaimer
 
@@ -54,11 +57,29 @@ This project is for educational and research purposes only and does not constitu
 
 ## Usage
 
+I work in a virtual environment with the dependencies from `requirements.txt` (plus `pytest` from `requirements-dev.txt`):
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+```
+
 ```
 python main.py
 ```
 
-Downloads SPY daily data (1993–2026), runs every strategy and saves the comparison chart to `results/equity_curve_<timestamp>.png`.
+Downloads SPY daily data (1993 to today), runs every strategy and saves the comparison chart to `results/equity_curve_<timestamp>.png` and the metrics table to `results/metrics.md`.
+
+## Tests and CI
+
+```
+pytest
+```
+
+The unit tests in `tests/` run in under a second and never touch the network: they use small synthetic price series to check the backtester (next-bar execution, costs, shorts), the metrics and every strategy's signals.
+
+GitHub Actions runs them on every push and pull request (Python 3.9 and 3.12), then runs the full SPY backtest, writes the metrics table to the job summary and uploads the equity curve as an artifact.
 
 ## Backtest Assumptions
 
