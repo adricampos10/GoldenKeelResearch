@@ -7,6 +7,7 @@ from strategies.ema_crossover import EMAStrategy
 from strategies.fakeout import FakeoutStrategy
 from strategies.macd_crossover import MACDStrategy
 from strategies.moving_average_crossover import MovingAverageStrategy
+from strategies.range_fakeout import RangeFakeoutStrategy
 
 ALL_STRATEGIES = [
     MovingAverageStrategy(short_window=5, long_window=20),
@@ -14,6 +15,7 @@ ALL_STRATEGIES = [
     MACDStrategy(fast=5, slow=12, signal_window=4),
     FakeoutStrategy(window=20),
     FakeoutStrategy(window=20, trade_shorts=True),
+    RangeFakeoutStrategy(trade_shorts=True),
 ]
 
 

@@ -3,6 +3,7 @@ from strategies.moving_average_crossover import MovingAverageStrategy
 from strategies.macd_crossover import MACDStrategy
 from strategies.fakeout import FakeoutStrategy
 from strategies.ema_crossover import EMAStrategy
+from strategies.range_fakeout import RangeFakeoutStrategy
 from backtester import backtest
 from metrics import Metrics
 from datetime import datetime
@@ -20,11 +21,19 @@ def main():
     df_macd    = MACDStrategy(fast=12, slow=26, signal_window=9).fit(data).get_signals()
     df_fakeout = FakeoutStrategy(window=252, trade_shorts=False).fit(data).get_signals()
     df_ema     = EMAStrategy(short_window=50, long_window=200).fit(data).get_signals()
+    range_fakeout = RangeFakeoutStrategy(max_below_sma=0.15).fit(data)
+    df_range   = range_fakeout.get_signals()
 
     # DEBUG fakeout
     print("Bull fakeouts:", df_fakeout['bull_fakeout'].sum())
     print("Bear fakeouts:", df_fakeout['bear_fakeout'].sum())
     print(df_fakeout[df_fakeout['position'] != 0][['Close', 'min_N', 'max_N', 'signal']].head(10))
+
+    # DEBUG range fakeout
+    print("\nRange fakeout trades:", len(range_fakeout.trades))
+    for trade in range_fakeout.trades:
+        print(trade['entry_date'].date(), trade['exit_date'].date(), round(trade['entry'], 2),
+              'stop', round(trade['stop'], 2), 'target', round(trade['target'], 2))
 
     # DEBUG MA
     print("\nMA signals:")
@@ -36,6 +45,7 @@ def main():
     result_macd    = backtest(df_macd)
     result_fakeout = backtest(df_fakeout)
     result_ema     = backtest(df_ema)
+    result_range   = backtest(df_range)
 
     # 4. Metrics
     metrics = {
@@ -43,6 +53,7 @@ def main():
         "MACD":           Metrics.compute(result_macd),
         "Fakeout":        Metrics.compute(result_fakeout),
         "EMA":            Metrics.compute(result_ema),
+        "Range Fakeout":  Metrics.compute(result_range),
     }
 
     for name, values in metrics.items():
@@ -67,6 +78,7 @@ def main():
         "MACD Strategy":    result_macd['equity'],
         "Fakeout Strategy": result_fakeout['equity'],
         "EMA Strategy":     result_ema['equity'],
+        "Range Fakeout":    result_range['equity'],
         "Buy & Hold (SPY)": result_ma['benchmark'],
     }
 

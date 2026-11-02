@@ -13,6 +13,7 @@ The project focuses on translating price action and market structure concepts in
 - Historical data ingestion (Yahoo Finance)
 - Strategy development framework
 - Four baseline strategies: SMA crossover, EMA crossover, MACD crossover and 252-day fakeout
+- A range fakeout detector built from hand-labelled chart examples, tested against them
 - Backtesting engine with next-bar execution, commission and slippage
 - Performance metrics (Sharpe ratio, drawdown, win rate)
 - Benchmark comparison against buy & hold, with log-scale equity and drawdown charts
@@ -106,6 +107,28 @@ Long when the MACD line is above its signal line, short when it is below. This b
 
 - **Bull fakeout**: price breaks below the 252-day low but closes back above it → go long.
 - **Bear fakeout**: price breaks above the 252-day high but closes back below it → exit to cash (or go short if `trade_shorts=True`).
+
+### Range Fakeout
+
+A false break of a long sideways range, as I trade it by hand:
+
+1. **Range**: the floor and the ceiling have each been touched at least twice, and the ceiling was touched again after the floor was first tested (a range, not a downtrend). At least 80 bars (about four months); the longest valid range wins.
+2. **Fakeout**: price trades below the floor but does not close more than half the range height below it.
+3. **Reversal**: the lowest swing low of the base plus a higher low (or an almost equal second bottom), and a close above the high between them, back inside the range. This covers double and triple bottoms, inverse head and shoulders and messy bases. `trigger="candle"` uses a bullish engulfing or a hammer instead.
+4. **Trade**: long on that close, stop below the base, target at the bottom of the resistance zone.
+
+Optional filters: `max_below_sma` (skip longs too far below the 200-day average) and `min_reward_risk`. With `trade_shorts=True` the same rules run upside down on breaks above the ceiling. Stops and targets are checked on highs and lows, but like every signal they are executed on the next close.
+
+## Pattern Labels
+
+The range fakeout rules come from annotated TradingView charts. Every example (and counterexample) is written down in `patterns/labels.yaml` with its range, fakeout, reversal and trade, checked against Yahoo Finance prices.
+
+`tests/test_labelled_cases.py` runs the detector on each case: winning cases must be traded, failed ones must be seen and then rejected by a named rule. The daily bars live in `tests/data/labels/`, so the tests stay offline. After adding a case:
+
+```
+python -m patterns.fetch_label_data
+pytest tests/test_labelled_cases.py
+```
 
 ## Performance (SPY, 1993–2026, after costs)
 
