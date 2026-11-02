@@ -1,0 +1,64 @@
+# CI: on every push and pull request, run the unit tests (offline, on synthetic
+# prices), then run the full SPY backtest and publish its metrics table and
+# equity curve. The backtest downloads data from Yahoo Finance, so a network
+# hiccup there does not fail the build.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        # 3.9 is the Python on my Mac, 3.12 a current release
+        python-version: ["3.9", "3.12"]
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run the unit tests
+        run: pytest -v
+
+  backtest:
+    needs: unit-tests
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the backtest
+        run: python main.py
+        env:
+          MPLBACKEND: Agg
+
+      - name: Write the metrics table
+        run: |
+          echo "## Backtest on SPY" >> "$GITHUB_STEP_SUMMARY"
+          cat results/metrics.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the equity curve
+        uses: actions/upload-artifact@v7
+        with:
+          name: equity-curve
+          path: results/equity_curve_*.png
